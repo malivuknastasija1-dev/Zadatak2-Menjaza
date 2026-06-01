@@ -3,7 +3,6 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package com.mycompany.menjazaclient;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.logging.Level;
@@ -40,12 +39,38 @@ public class ReceiveStickersFromServer implements Runnable {
                         if (missingTokeni.length > 1){
                             allMissing = missingTokeni[1];
                         }
+
+                        if (!parent.isUputstvoPrikazano()){
+                            String uputstvo = "UPUTSTVO ZA MENJAZU SLICICA: \n" + 
+                                "1. Stiklirajte SAMO duplikate koje zelite da PONUDITE.\n" + 
+                                "2. Stiklirajte SAMO odredjene slicice koje TRAZITE.\n" + 
+                                "Ako ne stiklirate NISTA - nudite sve duplikate i trazite sve koje Vam fale!\n";
+                            javax.swing.JOptionPane.showMessageDialog(parent, uputstvo, "Uputstvo", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                            parent.setUputstvoPrikazano(true);
+                        }
                         
                         parent.getTaConsole().append("*** VASE SLICICE ***\n");
                         parent.getTaConsole().append("Duplikati za razmenu: " + allDuplicates + "\n");
                         parent.getTaConsole().append("Slicice koje Vam nedostaju: " + allMissing + "\n"); 
+                        parent.getTaConsole().append("--------------------------------------------------\n");
+                        
+                        if (duplicateTokeni.length > 1 && !allDuplicates.equals("Nema duplikata")) {
+                            String[] nizBrojevaDuplikata = allDuplicates.split(",");
+                            parent.updateDuplicates(nizBrojevaDuplikata);
+                        } else {
+                            parent.updateDuplicates(new String[0]);
+                        }
+
+                        if (missingTokeni.length > 1 && !allMissing.equals("Nema slicica koje nedostaju")) {
+                            String[] nizBrojevaNedostaje = allMissing.split(",");
+                            parent.updateMissing(nizBrojevaNedostaje);
+                        } else {
+                            parent.updateMissing(new String[0]);
+                        }
+                        parent.getBtnSendRequest().setEnabled(true);
+                        
                     }else{
-                        parent.getTaConsole().append("Server: " + line);
+                        parent.getTaConsole().append("Server: " + line + "\n");
                     }   
                 }else{
                     parent.getTaConsole().append("Server je zatvorio vezu.\n");
