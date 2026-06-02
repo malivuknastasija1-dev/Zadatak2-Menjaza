@@ -75,8 +75,8 @@ public class MenjazaClient extends javax.swing.JFrame {
         pnlDuplicates = new javax.swing.JPanel(new java.awt.GridLayout(10, 10, 1, 1));
         pnlMissing = new javax.swing.JPanel(new java.awt.GridLayout(10, 10, 1, 1));
         
-        pnlDuplicates.setBorder(javax.swing.BorderFactory.createTitledBorder("Moji Duplikati (Štiklirano = Imam duplikat)"));
-        pnlMissing.setBorder(javax.swing.BorderFactory.createTitledBorder("Sličice koje mi nedostaju (Štiklirano = Nedostaje)"));
+        pnlDuplicates.setBorder(javax.swing.BorderFactory.createTitledBorder("Moji Duplikati (Stiklirano = Imam duplikat)"));
+        pnlMissing.setBorder(javax.swing.BorderFactory.createTitledBorder("Slicice koje mi nedostaju (Stiklirano = Nedostaje)"));
 
         mapDuplicates.clear();
         mapMissing.clear();
@@ -101,7 +101,7 @@ public class MenjazaClient extends javax.swing.JFrame {
         taConsole = new javax.swing.JTextArea();
         
         btnSendRequest = new javax.swing.JButton();
-        btnSendRequest.setText("Pošalji zahtev za razmenu");
+        btnSendRequest.setText("Posalji zahtev za razmenu");
         btnSendRequest.setEnabled(false);
         btnSendRequest.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -350,12 +350,12 @@ public class MenjazaClient extends javax.swing.JFrame {
         }
         
         taConsole.append("\n========================================\n");
-        taConsole.append("Predlog razmene za igrača: " + selectedPlayer + "\n");
+        taConsole.append("Predlog razmene za igraca: " + selectedPlayer + "\n");
         taConsole.append("Nudim duplikate: " + offer + "\n");
-        taConsole.append("Tražim sličice: " + require + "\n");
+        taConsole.append("Trazim sličice: " + require + "\n");
         taConsole.append("========================================\n");
 
-        String porukaZaServer = "EXCHANGE_REQUEST;player:" +selectedPlayer + ";offer:" + offer + ";require:" + require;
+        String porukaZaServer = "EXCHANGE_PROPOSAL;target:" +selectedPlayer + ";offer:" + offer + ";require:" + require;
         this.pw.println(porukaZaServer);
 
         taConsole.append("\nZahtev za razmenu poslat serveru... Čeka se potvrda...\n");
@@ -417,4 +417,5 @@ public class MenjazaClient extends javax.swing.JFrame {
     private javax.swing.JTextArea taConsole;
     private javax.swing.JTextField tfMyName;
 }
+
 
