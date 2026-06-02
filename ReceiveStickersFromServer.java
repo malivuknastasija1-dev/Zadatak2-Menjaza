@@ -25,6 +25,7 @@ public class ReceiveStickersFromServer implements Runnable {
             try{
                 line = this.br.readLine();
                 if (line != null){
+                    
                     if (line.startsWith("INITIAL_SET;")){
                         String[] tokeni = line.split(";");
                         String allDuplicates = "Nema duplikata";
@@ -67,21 +68,98 @@ public class ReceiveStickersFromServer implements Runnable {
                         } else {
                             parent.updateMissing(new String[0]);
                         }
+                        
                         parent.getBtnSendRequest().setEnabled(true);
                         
-                    }else{
+                    } 
+                    else if (line.contains("LIST_PLAYERS")) {
+                        String clearLine = line.substring(line.indexOf("LIST_PLAYERS"));
+                        String[] tokeni = clearLine.split(";");
+                        
+                        if (tokeni.length > 1 && !tokeni[1].trim().isEmpty()) {
+                            String[] players = tokeni[1].split(",");
+                            
+                            javax.swing.SwingUtilities.invokeLater(new Runnable() {
+                                @Override
+                                public void run() {
+                                    parent.getCbPlayers().removeAllItems();
+                                    int numOtherPlayers = 0;
+                                    
+                                    for (String plyr : players) {
+                                        if (plyr.contains("(")){
+                                            String name = plyr.substring(0, plyr.indexOf("("));
+                                            String inside = plyr.substring(plyr.indexOf("(") + 1, plyr.indexOf(")"));
+                                            String[] data = inside.split("\\|");
+                                            String displayComboBox = name + " (" + data[0] + " slicica)";
+                                            parent.getCbPlayers().addItem(displayComboBox);
+                                            numOtherPlayers++;
+                                            
+                                            parent.getTaConsole().append("Mozes da menjas slicice sa korisnikom " + name + ".\n");
+                                            parent.getTaConsole().append("Ti imas za njega slicice: " + data[1].replace(",", ", ") + "\n");
+                                            parent.getTaConsole().append("On za tebe ima slicice: " + data[2].replace(",", ", ") + "\n");
+                                            parent.getTaConsole().append("----------------------------------------\n");
+                                        }
+                                        
+                                    }
+                                    
+                                    if (numOtherPlayers > 0) {
+                                        parent.getCbPlayers().setEnabled(true);
+                                        parent.getBtnDelete().setEnabled(true); // Otključavamo i dugme za potvrdu
+                                    } else {
+                                        parent.getCbPlayers().addItem("Nema drugih aktivnih igraca");
+                                        parent.getCbPlayers().setEnabled(false);
+                                    }
+                                }
+                            });
+                        }
+                    } 
+                    else if(line.startsWith("ARRIVED_REQUEST;")){
+                        String[] tokeni = line.split(";");
+                        String from = "";
+                        String offer = "";
+                        String require = "";
+                        for(String tok : tokeni){
+                            if (tok.startsWith("from:")) from = tok.substring(5);
+                            if (tok.startsWith("offer:")) offer = tok.substring(6);
+                            if (tok.startsWith("require:")) require = tok.substring(8);
+                        }
+                        
+                        String finalFrom = from;
+                        String finalOffer = offer;
+                        String finalRequire = require;
+                        
+                        javax.swing.SwingUtilities.invokeLater(new Runnable(){
+                            @Override
+                            public void run(){
+                                int answer = javax.swing.JOptionPane.showConfirmDialog(parent,
+                                        "Igrac " + finalFrom + " nudi slicice: [" + finalOffer + "], a trazi od Vas: [" + finalRequire + "]. Da li prihvatate razmenu?",
+                                        "Zahtev za razmenu", javax.swing.JOptionPane.YES_NO_OPTION);
+                                if (answer == javax.swing.JOptionPane.YES_OPTION){
+                                    parent.getTaConsole().append("Prihvacena razmena sa " + finalFrom + "\n");
+                                    parent.getBr();
+                                    try{
+                                        java.io.PrintWriter pwFromClass = new java.io.PrintWriter(parent.getSoc().getOutputStream(), true);
+                                        pwFromClass.println("EXCHANGE_ACCEPTED;rival;" + finalFrom + ";rivalOffer:" + finalOffer + ";rivalRequire:" + finalRequire);
+                                    }catch(Exception problem){}
+                                }else{
+                                    parent.getTaConsole().append("Odbijena razmena");
+                                }
+                            }
+                        });
+                        
+                    }
+                    else {
                         parent.getTaConsole().append("Server: " + line + "\n");
                     }   
-                }else{
+                } else {
                     parent.getTaConsole().append("Server je zatvorio vezu.\n");
                     break;
                 }
-            }catch (IOException problem){
+            } catch (IOException problem){
                 Logger.getLogger(ReceiveStickersFromServer.class.getName()).log(Level.SEVERE, null, problem);
                 parent.getTaConsole().append("Izgubljena konekcija sa serverom!\n");
                 break;
             }
         }
     }
-    
 }
