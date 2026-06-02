@@ -149,7 +149,14 @@ public class ConnectedMenjazaClient implements Runnable {
                         System.out.println("Konektovan igrac: " + this.userName);
                         initialSetStickers();
                         sendStickersToClient();
-                        makePlayerList(); // Osvežava listu svima čim uđeš
+                        
+                        try {
+                            Thread.sleep(150);
+                        } catch (InterruptedException e) {
+                            Logger.getLogger(ConnectedMenjazaClient.class.getName()).log(Level.SEVERE, null, e);
+                        }
+                        
+                        makePlayerList();
                     }else{
                         System.out.println("Diskonektovan igrac: " + this.userName);
                         break;
@@ -186,9 +193,9 @@ public class ConnectedMenjazaClient implements Runnable {
                             }
                             
                             if (foundPlayer){
-                                this.pw.println("Zahtev uspešno prosleđen igraču " + namePlayer + ". Čeka se odgovor...");
+                                this.pw.println("Zahtev uspesno prosledjen igracu " + namePlayer + ". Ceka se odgovor...");
                             } else {
-                                this.pw.println("Greška - Igrač: " + namePlayer + " je diskonektovan!");
+                                this.pw.println("Greska - Igrac: " + namePlayer + " je diskonektovan!");
                             }
                         }
                         
@@ -226,14 +233,18 @@ public class ConnectedMenjazaClient implements Runnable {
                                     Collections.sort(cl.missingStickers);
                                     
                                     this.sendStickersToClient();
+                                    
+                                    try { Thread.sleep(50); } catch (InterruptedException ex) {}
+                                    
                                     cl.sendStickersToClient();
                                     
-                                    this.pw.println("Razmena sa igračem " + peerName + " je uspešno izvršena u bazi!");
-                                    cl.pw.println("Igrač " + this.userName + " je prihvatio razmenu! Sličice su zamenjene.");
+                                    this.pw.println("Razmena sa igracem " + peerName + " je uspesno izvrsena u bazi!");
+                                    cl.pw.println("Igrac " + this.userName + " je prihvatio razmenu! Slicice su zamenjene.");
                                     break;
                                 }
                             }
                             
+                            try { Thread.sleep(100); } catch (InterruptedException ex) {}
                             makePlayerList();
                         }
                         
@@ -255,9 +266,10 @@ public class ConnectedMenjazaClient implements Runnable {
             }catch(IOException problem){
                 System.out.println("Diskonektovan igrac: " + this.userName);
                 
-                for (ConnectedMenjazaClient cl : this.allClients){
-                    if (cl.getUserName().equals(this.userName)){
-                        this.allClients.remove(cl);
+                Iterator<ConnectedMenjazaClient> it = this.allClients.iterator();
+                while(it.hasNext()){
+                    if(it.next().getUserName().equals(this.userName)){
+                        it.remove();
                         break;
                     }
                 }
@@ -268,5 +280,4 @@ public class ConnectedMenjazaClient implements Runnable {
         }
     }
 }
-
-}
+  
