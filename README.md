@@ -31,4 +31,11 @@
 * AI alat je koriscen za proveru funkcionalnosti pojedinih linija koda, zbog same Java sintakse.
 * Kod je napisan u skladu sa primerima sa vezbi i predavanja. :)
 -----------------------------------------------------------------------------------------------------------------------------------------------------
+2.6.2026.
+
+- Kreiran je deo za prihvatanje zahteva za razmenu.
+
+* AI alat je koriscen za proveru funkcionalnosti pojedinih linija koda, zbog same Java sintakse.
+* Kod je napisan u skladu sa primerima sa vezbi i predavanja. :)
+-----------------------------------------------------------------------------------------------------------------------------------------------------
 
