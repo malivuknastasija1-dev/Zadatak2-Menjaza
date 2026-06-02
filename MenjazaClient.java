@@ -291,6 +291,11 @@ public class MenjazaClient extends javax.swing.JFrame {
             return;
         }
         
+        String cleanTargetPlayer = selectedPlayer;
+        if (cleanTargetPlayer.contains("(")) {
+            cleanTargetPlayer = cleanTargetPlayer.substring(0, cleanTargetPlayer.indexOf("(")).trim();
+        }
+        
         boolean checkedDuplicates = false;
         boolean checkedMissing = false;
 
@@ -350,12 +355,13 @@ public class MenjazaClient extends javax.swing.JFrame {
         }
         
         taConsole.append("\n========================================\n");
-        taConsole.append("Predlog razmene za igraca: " + selectedPlayer + "\n");
+        taConsole.append("Predlog razmene za igraca: " + cleanTargetPlayer + "\n");
         taConsole.append("Nudim duplikate: " + offer + "\n");
         taConsole.append("Trazim sličice: " + require + "\n");
         taConsole.append("========================================\n");
 
-        String porukaZaServer = "EXCHANGE_PROPOSAL;target:" +selectedPlayer + ";offer:" + offer + ";require:" + require;
+        // Šaljemo očišćeno ime serveru
+        String porukaZaServer = "EXCHANGE_PROPOSAL;target:" + cleanTargetPlayer + ";offer:" + offer + ";require:" + require;
         this.pw.println(porukaZaServer);
 
         taConsole.append("\nZahtev za razmenu poslat serveru... Čeka se potvrda...\n");
