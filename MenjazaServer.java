@@ -43,7 +43,7 @@ public class MenjazaServer {
         
         while(true){
             try{
-                System.out.println("Waiting for new clients...");
+                System.out.println("Server ceka nove igrace...");
                 client = this.ssocket.accept();
             } catch(IOException problem){
                 Logger.getLogger(MenjazaServer.class.getName()).log(Level.SEVERE, null, problem);
@@ -76,3 +76,4 @@ public class MenjazaServer {
         server.acceptClients();
     }
 }
+
