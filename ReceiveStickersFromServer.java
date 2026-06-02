@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.mycompany.menjazaclient;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,6 +21,8 @@ public class ReceiveStickersFromServer implements Runnable {
             try{
                 line = this.br.readLine();
                 if (line != null){
+                    // Odkomentarisano radi lakšeg praćenja rada mrežnog koda
+//                    System.out.println("KLIJENT PRIMIO: " + line);
                     
                     if (line.startsWith("INITIAL_SET;")){
                         String[] tokeni = line.split(";");
@@ -74,54 +72,72 @@ public class ReceiveStickersFromServer implements Runnable {
                     } 
                     else if (line.contains("LIST_PLAYERS")) {
                         String clearLine = line.substring(line.indexOf("LIST_PLAYERS"));
-                        String[] tokeni = clearLine.split(";");
+                        String[] tokeni = clearLine.split(";", -1); 
                         
-                        if (tokeni.length > 1 && !tokeni[1].trim().isEmpty()) {
-                            String[] players = tokeni[1].split(",");
-                            
-                            javax.swing.SwingUtilities.invokeLater(new Runnable() {
-                                @Override
-                                public void run() {
+                        javax.swing.SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    parent.getTaConsole().setText("");
                                     parent.getCbPlayers().removeAllItems();
                                     int numOtherPlayers = 0;
                                     
-                                    for (String plyr : players) {
-                                        if (plyr.contains("(")){
-                                            String name = plyr.substring(0, plyr.indexOf("("));
-                                            String inside = plyr.substring(plyr.indexOf("(") + 1, plyr.indexOf(")"));
-                                            String[] data = inside.split("\\|");
-                                            String displayComboBox = name + " (" + data[0] + " slicica)";
-                                            parent.getCbPlayers().addItem(displayComboBox);
-                                            numOtherPlayers++;
-                                            
-                                            parent.getTaConsole().append("Mozes da menjas slicice sa korisnikom " + name + ".\n");
-                                            parent.getTaConsole().append("Ti imas za njega slicice: " + data[1].replace(",", ", ") + "\n");
-                                            parent.getTaConsole().append("On za tebe ima slicice: " + data[2].replace(",", ", ") + "\n");
-                                            parent.getTaConsole().append("----------------------------------------\n");
-                                        }
+                                    if (tokeni.length > 1 && !tokeni[1].trim().isEmpty()) {
+                                        String allPlayersRaw = tokeni[1].trim();
+                                      
+                                        String[] players = allPlayersRaw.split(",(?![^()]*\\))");
                                         
+                                        for (String plyr : players) {
+                                            plyr = plyr.trim();
+                                            if (plyr.contains("(") && plyr.contains(")")) {
+                                                String name = plyr.substring(0, plyr.indexOf("(")).trim();
+                                                String inside = plyr.substring(plyr.indexOf("(") + 1, plyr.lastIndexOf(")"));
+                                                String[] data = inside.split("\\|");
+                                                
+                                                String numExcs = data[0].trim();
+                                                String displayComboBox = name + " (" + numExcs + ")";
+                                                parent.getCbPlayers().addItem(displayComboBox);
+                                                numOtherPlayers++;
+                                                
+                                                parent.getTaConsole().append("Mozes da menjas slicice sa korisnikom " + name + ".\n");
+                                                if (data.length > 1 && !data[1].equals("Nista")) {
+                                                    parent.getTaConsole().append("  -> Igrac tebi moze dati: " + data[1].replace(",", ", ") + "\n");
+                                                }
+                                                if (data.length > 2 && !data[2].equals("Nista")) {
+                                                    parent.getTaConsole().append("  -> Ti igracu mozes dati: " + data[2].replace(",", ", ") + "\n");
+                                                }
+                                                parent.getTaConsole().append("  Mogucih obostranih razmena: " + data[0] + "\n");
+                                                parent.getTaConsole().append("----------------------------------------\n");
+                                            }
+                                        }
                                     }
                                     
-                                    if (numOtherPlayers > 0) {
-                                        parent.getCbPlayers().setEnabled(true);
-                                        parent.getBtnDelete().setEnabled(true); // Otključavamo i dugme za potvrdu
-                                    } else {
+                                    if (numOtherPlayers == 0) {
                                         parent.getCbPlayers().addItem("Nema drugih aktivnih igraca");
-                                        parent.getCbPlayers().setEnabled(false);
                                     }
+                                    
+                                    parent.getCbPlayers().setEnabled(true);
+                                    parent.getCbPlayers().revalidate();
+                                    parent.getCbPlayers().repaint();
+                                    
+                                    System.out.println("Uspešno osvezeno! Broj stavki u ComboBox-u: " + parent.getCbPlayers().getItemCount());
+                                    
+                                } catch (Exception problem) {
+                                    System.out.println("GRESKA PRI PARSIRANJU LISTE: " + problem.getMessage());
+                                    problem.printStackTrace();
                                 }
-                            });
-                        }
-                    } 
+                            }
+                        });
+                    }
                     else if(line.startsWith("ARRIVED_REQUEST;")){
                         String[] tokeni = line.split(";");
                         String from = "";
                         String offer = "";
                         String require = "";
                         for(String tok : tokeni){
-                            if (tok.startsWith("from:")) from = tok.substring(5);
-                            if (tok.startsWith("offer:")) offer = tok.substring(6);
-                            if (tok.startsWith("require:")) require = tok.substring(8);
+                            if (tok.startsWith("from:")) from = tok.substring(5).trim();
+                            if (tok.startsWith("offer:")) offer = tok.substring(6).trim();
+                            if (tok.startsWith("require:")) require = tok.substring(8).trim();
                         }
                         
                         String finalFrom = from;
@@ -136,17 +152,17 @@ public class ReceiveStickersFromServer implements Runnable {
                                         "Zahtev za razmenu", javax.swing.JOptionPane.YES_NO_OPTION);
                                 if (answer == javax.swing.JOptionPane.YES_OPTION){
                                     parent.getTaConsole().append("Prihvacena razmena sa " + finalFrom + "\n");
-                                    parent.getBr();
                                     try{
                                         java.io.PrintWriter pwFromClass = new java.io.PrintWriter(parent.getSoc().getOutputStream(), true);
-                                        pwFromClass.println("EXCHANGE_ACCEPTED;rival;" + finalFrom + ";rivalOffer:" + finalOffer + ";rivalRequire:" + finalRequire);
-                                    }catch(Exception problem){}
+                                        pwFromClass.println("EXCHANGE_ACCEPTED;peer:" + finalFrom + ";hisOffer:" + finalOffer + ";hisRequire:" + finalRequire);
+                                    }catch(Exception problem){
+                                        parent.getTaConsole().append("Greska prilikom slanja potvrde serveru.\n");
+                                    }
                                 }else{
-                                    parent.getTaConsole().append("Odbijena razmena");
+                                    parent.getTaConsole().append("Odbijena razmena.\n");
                                 }
                             }
                         });
-                        
                     }
                     else {
                         parent.getTaConsole().append("Server: " + line + "\n");
