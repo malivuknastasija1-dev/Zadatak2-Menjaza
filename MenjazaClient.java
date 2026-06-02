@@ -399,7 +399,7 @@ public class MenjazaClient extends javax.swing.JFrame {
         pnlMissing.repaint();
         
         taConsole.append("Uspesna razmena!\n");
-        taConsole.append("Sklonjeno je: " + grayDuplicates + "duplikata i dodato je: " +grayMissing + "nedostajucih slicica\n");
+        taConsole.append("Sklonjeno je: " + grayDuplicates + " duplikata i dodato je: " + grayMissing + " nedostajucih slicica\n");
     }
 
     public static void main(String[] args) {
@@ -417,3 +417,4 @@ public class MenjazaClient extends javax.swing.JFrame {
     private javax.swing.JTextArea taConsole;
     private javax.swing.JTextField tfMyName;
 }
+
