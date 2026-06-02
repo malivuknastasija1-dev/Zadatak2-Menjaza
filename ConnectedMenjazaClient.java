@@ -130,7 +130,7 @@ public class ConnectedMenjazaClient implements Runnable {
                 String canOfferString = canOffer.isEmpty() ? "Nista" : canOffer.toString().replaceAll("[\\[\\] ]", "");
                 String canReceiveString = canReceive.isEmpty() ? "Nista" : canReceive.toString().replaceAll("[\\[\\] ]", "");
                 
-                sj.add(player2Name + " (" + numExcs + "|" + canOfferString + "|" + canReceiveString + ")");
+                sj.add(player2Name + " (" + numExcs + "|" + canReceiveString + "|" + canOfferString + ")");
             }
 
             String message = "LIST_PLAYERS;" + sj.toString();
@@ -233,18 +233,17 @@ public class ConnectedMenjazaClient implements Runnable {
                                     Collections.sort(cl.missingStickers);
                                     
                                     this.sendStickersToClient();
+                                    cl.sendStickersToClient();
                                     
                                     try { Thread.sleep(50); } catch (InterruptedException ex) {}
                                     
-                                    cl.sendStickersToClient();
-                                    
-                                    this.pw.println("Razmena sa igracem " + peerName + " je uspesno izvrsena u bazi!");
+                                    this.pw.println("Razmena sa igracem " + peerName + " je uspesno izvrsena!");
                                     cl.pw.println("Igrac " + this.userName + " je prihvatio razmenu! Slicice su zamenjene.");
                                     break;
                                 }
                             }
                             
-                            try { Thread.sleep(100); } catch (InterruptedException ex) {}
+                            try { Thread.sleep(150); } catch (InterruptedException ex) {}
                             makePlayerList();
                         }
                         
