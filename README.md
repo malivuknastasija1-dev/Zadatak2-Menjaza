@@ -38,4 +38,5 @@
 * AI alat je koriscen za proveru funkcionalnosti pojedinih linija koda, zbog same Java sintakse.
 * Kod je napisan u skladu sa primerima sa vezbi i predavanja. :)
 -----------------------------------------------------------------------------------------------------------------------------------------------------
-
+**Primer rada aplikacije "Menjaza"**
+Konektovala su se 4 igraca i svakom od njih je stigao inicijalni set slicica, kao i spisak slicica pogodnih za moguce razmene. Igrac4 zeli da se menja sa korisnikom Igrac2, i broj u zagradi oznacava koliko razmena slicica je moguce ostvariti. Igrac4 selektuje jednog svog duplikata, i jednu slicicu koja mu fali, potom posalje zahtev ka Igrac2. Igrac2 moze da prihvati ili odbije zahtev. Ako prihvati, automatski se azuriraju paneli sa duplikatima i slicicama koje nedostaju kod oba igraca, ali ako odbije, nista se ne desava i igra se redovno nastavlja. Oba igraca imaju i mogucnost da rucno obrisu slicice. Nakon izlaska iz igre nekog od igraca, sistem se osvezava i razmena je moguca samo sa aktivnim igracima. Primer aplikacije je prikazan na narednoj slici:
