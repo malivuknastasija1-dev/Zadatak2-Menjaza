@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- */
-
 package com.mycompany.menjazaclient;
 
 import java.io.BufferedReader;
@@ -9,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
@@ -101,7 +98,7 @@ public class MenjazaClient extends javax.swing.JFrame {
         taConsole = new javax.swing.JTextArea();
         
         btnSendRequest = new javax.swing.JButton();
-        btnSendRequest.setText("Posalji zahtev za razmenu");
+        btnSendRequest.setText("Pošalji zahtev za razmenu");
         btnSendRequest.setEnabled(false);
         btnSendRequest.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -110,7 +107,7 @@ public class MenjazaClient extends javax.swing.JFrame {
         });
         
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Menjaza slicica klijent");
+        setTitle("Menjaza sličica");
         
         btnConnect.setText("Konektuj se");
         btnConnect.addActionListener(new java.awt.event.ActionListener() {
@@ -119,11 +116,11 @@ public class MenjazaClient extends javax.swing.JFrame {
             }
         });
         
-        jLabel1.setText("Ime igraca: ");
+        jLabel1.setText("Ime igrača: ");
         jLabel1.setEnabled(false);
         tfMyName.setEnabled(false);
         
-        btnSendUserName.setText("Udji u igru");
+        btnSendUserName.setText("Uđi u igru");
         btnSendUserName.setEnabled(false);
         btnSendUserName.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -139,11 +136,11 @@ public class MenjazaClient extends javax.swing.JFrame {
         jScrollPane1.setViewportView(taConsole);
         
         cbPlayers = new javax.swing.JComboBox<>();
-        cbPlayers.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Nema aktivnih igraca" }));
+        cbPlayers.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Nema aktivnih igrača" }));
         cbPlayers.setEnabled(false);
         
         btnDelete = new javax.swing.JButton();
-        btnDelete.setText("Prihvati i 'zasivi'");
+        btnDelete.setText("Obriši"); 
         btnDelete.setEnabled(false);
         btnDelete.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -253,7 +250,7 @@ public class MenjazaClient extends javax.swing.JFrame {
             this.br = new BufferedReader(new InputStreamReader(this.socket.getInputStream(), "UTF-8"));
             this.pw = new PrintWriter(this.socket.getOutputStream(), true);
             
-            taConsole.append("Uspesno uspostavljena mreza sa serverom!\n");
+            taConsole.append("Uspešno uspostavljena mreža sa serverom!\n");
             
             jLabel1.setEnabled(true);
             tfMyName.setEnabled(true);
@@ -272,140 +269,160 @@ public class MenjazaClient extends javax.swing.JFrame {
             tfMyName.setEnabled(false);
             btnSendUserName.setEnabled(false);
             taConsole.setEnabled(true);
+            btnDelete.setEnabled(true); 
             taConsole.append("Ime: " + ime + " je poslato serveru! \n");
-            taConsole.append("Ceka se inicijalni set slicica... \n");
-            taConsole.append("------------------------------------------------------------------------\n");
+            taConsole.append("Čeka se inicijalni set sličica... \n");
             
             this.rsfs = new ReceiveStickersFromServer(this);
             Thread thr = new Thread(rsfs);
             thr.start();
         } else {
-            JOptionPane.showMessageDialog(this, "Unesite vase ime!");
+            JOptionPane.showMessageDialog(this, "Unesite korisničko ime!");
         }
     }
     
     private void btnSendRequestActionPerformed(java.awt.event.ActionEvent evt) {
         String selectedPlayer = (String) cbPlayers.getSelectedItem();
-        if (selectedPlayer == null || selectedPlayer.equals("Nema aktivnih igraca")){
-            JOptionPane.showMessageDialog(this, "Izaberite igraca za razmenu");
+        if (selectedPlayer == null || selectedPlayer.equals("Nema aktivnih igraca") || selectedPlayer.equals("Nema drugih aktivnih igrača")){
+            JOptionPane.showMessageDialog(this, "Izaberite igrača za razmenu");
             return;
         }
-        
+
         String cleanTargetPlayer = selectedPlayer;
         if (cleanTargetPlayer.contains("(")) {
             cleanTargetPlayer = cleanTargetPlayer.substring(0, cleanTargetPlayer.indexOf("(")).trim();
         }
-        
+
+        int maxMogucihRazmena = 0;
+        try {
+            if (selectedPlayer.contains("(") && selectedPlayer.contains(")")) {
+                String brStr = selectedPlayer.substring(selectedPlayer.indexOf("(") + 1, selectedPlayer.indexOf(")")).trim();
+                if (brStr.contains("|")) {
+                    brStr = brStr.split("\\|")[0].trim();
+                }
+                maxMogucihRazmena = Integer.parseInt(brStr);
+            }
+        } catch (Exception problem) {
+            maxMogucihRazmena = 0;
+        }
+
         boolean checkedDuplicates = false;
         boolean checkedMissing = false;
+
+        int countOffer = 0;
+        int countRequire = 0;
 
         for (int i = 1; i <= 99; i++) {
             if (mapDuplicates.get(i).isSelected()) {
                 checkedDuplicates = true;
+                countOffer++;
             }
             if (mapMissing.get(i).isSelected()) {
                 checkedMissing = true;
+                countRequire++;
             }
         }
 
         boolean takeAll = (!checkedDuplicates && !checkedMissing);
 
-        StringBuilder offerSB = new StringBuilder();
-        for (int i = 1; i <= 99; i++) {
-            if (takeAll) {
-                if (mapDuplicates.get(i).isEnabled()) {
-                    offerSB.append(i).append(",");
-                }
-            } else {
+        String offer = "";
+        String require = "";
+
+        if (takeAll) {
+            if (maxMogucihRazmena == 0){
+                JOptionPane.showMessageDialog(this, "Sa igračem " + cleanTargetPlayer + " nemate zajedničkih sličica!", "Validacija razmene", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            offer = "SVE";
+            require = "SVE";
+
+        } else {
+            if (countOffer != countRequire) {
+                JOptionPane.showMessageDialog(this, 
+                    "Greška: Broj ponuđenih (" + countOffer + ") i traženih sličica (" + countRequire + ") mora biti jednak za razmenu 1-na-1!", 
+                    "Validacija razmene", 
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (countOffer > maxMogucihRazmena) {
+                JOptionPane.showMessageDialog(this, 
+                    "Greška: Sa igračem " + cleanTargetPlayer + " možete razmeniti maksimalno " + maxMogucihRazmena + " sličica!\n" +
+                    "Vi ste selektovali " + countOffer + ".", 
+                    "Validacija limita razmene", 
+                    JOptionPane.ERROR_MESSAGE);
+                return; 
+            }
+
+            StringBuilder offerSB = new StringBuilder();
+            for (int i = 1; i <= 99; i++) {
                 if (mapDuplicates.get(i).isSelected()) {
                     offerSB.append(i).append(",");
                 }
             }
-        }
+            offer = offerSB.toString();
+            if (offer.endsWith(",")) {
+                offer = offer.substring(0, offer.length() - 1);
+            }
+            if (offer.isEmpty()) offer = "Nista";
 
-        String offer = offerSB.toString();
-        if (offer.endsWith(",")) {
-            offer = offer.substring(0, offer.length() - 1);
-        }
-        if (offer.isEmpty()) {
-            offer = "Nista";
-        }
-
-        StringBuilder requireSB = new StringBuilder();
-        for (int i = 1; i <= 99; i++) {
-            if (takeAll) {
-                if (mapMissing.get(i).isEnabled()) {
+            StringBuilder requireSB = new StringBuilder();
+            for (int i = 1; i <= 99; i++) {
+                if (mapMissing.get(i).isSelected()) {
                     requireSB.append(i).append(",");
                 }
-            } else {
-                if (checkedMissing) {
-                    if (mapMissing.get(i).isSelected()) {
-                        requireSB.append(i).append(",");
-                    }
-                }
             }
-        }
+            require = requireSB.toString();
+            if (require.endsWith(",")) {
+                require = require.substring(0, require.length() - 1);
+            }
+            if (require.isEmpty()) require = "Nista";
+        } 
 
-        String require = requireSB.toString();
-        if (require.endsWith(",")) {
-            require = require.substring(0, require.length() - 1);
-        }
-        if (require.isEmpty()) {
-            require = "Nista";
-        }
-        
         taConsole.append("\n========================================\n");
-        taConsole.append("Predlog razmene za igraca: " + cleanTargetPlayer + "\n");
+        taConsole.append("Predlog razmene za igrača: " + cleanTargetPlayer + "\n");
+        taConsole.append("Automatski: " + takeAll + "\n");
         taConsole.append("Nudim duplikate: " + offer + "\n");
-        taConsole.append("Trazim sličice: " + require + "\n");
+        taConsole.append("Tražim sličice: " + require + "\n");
         taConsole.append("========================================\n");
 
-        // Šaljemo očišćeno ime serveru
-        String porukaZaServer = "EXCHANGE_PROPOSAL;target:" + cleanTargetPlayer + ";offer:" + offer + ";require:" + require;
-        this.pw.println(porukaZaServer);
+        String messageForServer = "EXCHANGE_PROPOSAL;target:" + cleanTargetPlayer + ";offer:" + offer + ";require:" + require;
+        this.pw.println(messageForServer);
 
-        taConsole.append("\nZahtev za razmenu poslat serveru... Čeka se potvrda...\n");
+        taConsole.append("\nZahtev za razmenu poslat serveru... Ceka se potvrda...\n");
     }
     
     private void btnDeleteActionPerformed(java.awt.event.ActionEvent evt) {
-        int grayDuplicates = 0;
-        int grayMissing = 0;
-        
-        for(int i = 1; i <= 99; i++){
-            if (mapDuplicates.get(i).isSelected()){
-                mapDuplicates.get(i).setSelected(false);
-                mapDuplicates.get(i).setEnabled(false);
-                grayDuplicates++;
+        ArrayList<Integer> zaBrisanjeDuplikata = new ArrayList<>();
+        ArrayList<Integer> zaBrisanjeMissing = new ArrayList<>();
+
+        for (int i = 1; i <= 99; i++) {
+            if (mapDuplicates.get(i).isSelected()) {
+                zaBrisanjeDuplikata.add(i);
             }
-            
-            if (mapMissing.get(i).isSelected()){
-                mapMissing.get(i).setSelected(false);
-                mapMissing.get(i).setEnabled(false);
-                grayMissing++;
+            if (mapMissing.get(i).isSelected()) {
+                zaBrisanjeMissing.add(i);
             }
         }
-        
-        if (grayDuplicates == 0 && grayMissing == 0){
-            for(int i = 1; i <= 99; i++){
-                if (mapDuplicates.get(i).isEnabled()){
-                    mapDuplicates.get(i).setEnabled(false);
-                    grayDuplicates++;
-                }
-                
-                if (mapMissing.get(i).isEnabled()){
-                    mapMissing.get(i).setEnabled(false);
-                    grayMissing++;
-                }
-            }
+
+        if (zaBrisanjeDuplikata.isEmpty() && zaBrisanjeMissing.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Morate selektovati barem jednu sličicu u panelima za brisanje!");
+            return;
         }
-        
-        pnlDuplicates.revalidate();
-        pnlDuplicates.repaint();
-        pnlMissing.revalidate();
-        pnlMissing.repaint();
-        
-        taConsole.append("Uspesna razmena!\n");
-        taConsole.append("Sklonjeno je: " + grayDuplicates + " duplikata i dodato je: " + grayMissing + " nedostajucih slicica\n");
+
+        StringBuilder dupSB = new StringBuilder();
+        for (int num : zaBrisanjeDuplikata) dupSB.append(num).append(",");
+        String dupStr = dupSB.toString().isEmpty() ? "Nista" : dupSB.substring(0, dupSB.length() - 1);
+
+        StringBuilder missSB = new StringBuilder();
+        for (int num : zaBrisanjeMissing) missSB.append(num).append(",");
+        String missStr = missSB.toString().isEmpty() ? "Nista" : missSB.substring(0, missSB.length() - 1);
+
+        String porukaZaServer = "MANUAL_DELETE;duplicates:" + dupStr + ";missing:" + missStr;
+        this.pw.println(porukaZaServer);
+
+        taConsole.append("\nZahtev za ručno brisanje selektovanih sličica je poslat serveru...\n");
     }
 
     public static void main(String[] args) {
@@ -423,5 +440,3 @@ public class MenjazaClient extends javax.swing.JFrame {
     private javax.swing.JTextArea taConsole;
     private javax.swing.JTextField tfMyName;
 }
-
-
