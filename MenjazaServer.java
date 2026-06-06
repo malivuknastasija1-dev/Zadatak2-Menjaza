@@ -1,3 +1,4 @@
+
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  */
@@ -43,7 +44,7 @@ public class MenjazaServer {
         
         while(true){
             try{
-                System.out.println("Server ceka nove igrace...");
+                System.out.println("Server čeka nove igrače...");
                 client = this.ssocket.accept();
             } catch(IOException problem){
                 Logger.getLogger(MenjazaServer.class.getName()).log(Level.SEVERE, null, problem);
@@ -72,8 +73,7 @@ public class MenjazaServer {
     
     public static void main(String[] args) {
         MenjazaServer server = new MenjazaServer(4925);
-        System.out.println("Server za menjazu slicica je pokrenut, slusam na portu 4925");
+        System.out.println("Server za menjažu sličica je pokrenut, slušam na portu 4925");
         server.acceptClients();
     }
 }
-
