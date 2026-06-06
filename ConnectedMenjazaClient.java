@@ -67,14 +67,14 @@ public class ConnectedMenjazaClient implements Runnable {
         int numberMissing = rnd.nextInt(100);
         
         while(duplicatesStickers.size() < numberDuplicates){
-            int num = rnd.nextInt(99) + 1;
+            int num = rnd.nextInt(1,100);
             if (!duplicatesStickers.contains(num)){
                 duplicatesStickers.add(num);
             }
         }
         
         while(missingStickers.size() < numberMissing){
-            int num = rnd.nextInt(99) + 1;
+            int num = rnd.nextInt(1,100);
             if (!missingStickers.contains(num) && !duplicatesStickers.contains(num)){
                 missingStickers.add(num);
             }
@@ -103,7 +103,7 @@ public class ConnectedMenjazaClient implements Runnable {
         }
         
         this.pw.println(sb.toString());
-        System.out.println("Sent to: " + userName + " " + sb.toString());
+        System.out.println("Poslato: " + userName + " " + sb.toString());
     }
     
     public void makePlayerList() {
@@ -115,10 +115,8 @@ public class ConnectedMenjazaClient implements Runnable {
 
             for (ConnectedMenjazaClient player2 : allClients) {
                 String player2Name = player2.getUserName();
-                if (player2Name == null || player2Name.trim().isEmpty() || playerReceiver == player2) {
-                    continue; 
-                }
-
+                if (player2Name == null || player2Name.trim().isEmpty() || playerReceiver == player2) continue;
+                
                 java.util.List<Integer> canOffer = new java.util.ArrayList<>(playerReceiver.getDuplicates());
                 canOffer.retainAll(player2.getMissing());
 
@@ -146,23 +144,35 @@ public class ConnectedMenjazaClient implements Runnable {
                     this.userName = this.br.readLine();
                     if(this.userName != null){
                         this.userName = this.userName.trim();
-                        System.out.println("Konektovan igrac: " + this.userName);
+                        System.out.println("Konektovan igrač: " + this.userName);
                         initialSetStickers();
                         sendStickersToClient();
                         
                         try {
                             Thread.sleep(150);
-                        } catch (InterruptedException e) {
-                            Logger.getLogger(ConnectedMenjazaClient.class.getName()).log(Level.SEVERE, null, e);
+                        } catch (InterruptedException problem) {
+                            Logger.getLogger(ConnectedMenjazaClient.class.getName()).log(Level.SEVERE, null, problem);
                         }
                         
                         makePlayerList();
                     }else{
-                        System.out.println("Diskonektovan igrac: " + this.userName);
+                        System.out.println("Diskonektovan igrač: " + this.userName);
+                        synchronized(this.allClients){
+                            Iterator<ConnectedMenjazaClient> it = this.allClients.iterator();
+                            while(it.hasNext()){
+                                if (it.next().getUserName().equals(this.userName)){
+                                    it.remove();
+                                    break;
+                                }
+                            }
+                                    
+                        }
+                        makePlayerList();
+                        this.socket.close();
                         break;
                     }
                 }else{
-                    System.out.println("Server ceka na " + this.userName + " zahtev...");
+                    System.out.println("Server čeka na " + this.userName + " zahtev...");
                     String line = this.br.readLine();
                     if(line != null){
                         System.out.println("Stigao je zahtev od " + this.userName + " " + line);
@@ -172,26 +182,43 @@ public class ConnectedMenjazaClient implements Runnable {
                             String namePlayer = "";
                             String offer = "";
                             String require = "";
-                            
+
                             for(String tok : tokeni){
                                 if (tok.startsWith("target:")) namePlayer = tok.substring(7).trim();
                                 if (tok.startsWith("offer:")) offer = tok.substring(6).trim();
                                 if (tok.startsWith("require:")) require = tok.substring(8).trim();
                             }
-                            
+
                             if (namePlayer.contains("(")) {
                                 namePlayer = namePlayer.substring(0, namePlayer.indexOf("(")).trim();
                             }
-                            
+
                             boolean foundPlayer = false;
                             for(ConnectedMenjazaClient cl : allClients){
                                 if (cl.getUserName().equalsIgnoreCase(namePlayer)){
+
+                                    if (offer.equals("SVE") || require.equals("SVE")) {
+                                        java.util.List<Integer> canOffer = new java.util.ArrayList<>(this.getDuplicates());
+                                        canOffer.retainAll(cl.getMissing());
+
+                                        java.util.List<Integer> canReceive = new java.util.ArrayList<>(cl.getDuplicates());
+                                        canReceive.retainAll(this.getMissing());
+
+                                        int limit = Math.min(canOffer.size(), canReceive.size());
+
+                                        java.util.List<Integer> finalOffer = canOffer.subList(0, limit);
+                                        java.util.List<Integer> finalReceive = canReceive.subList(0, limit);
+
+                                        offer = finalOffer.toString().replaceAll("[\\[\\] ]", "");
+                                        require = finalReceive.toString().replaceAll("[\\[\\] ]", "");
+                                    }
+
                                     cl.pw.println("ARRIVED_REQUEST;from:" + this.userName + ";offer:" + offer + ";require:" + require);
                                     foundPlayer = true;
                                     break;
                                 }
                             }
-                            
+
                             if (foundPlayer){
                                 this.pw.println("Zahtev uspesno prosledjen igracu " + namePlayer + ". Ceka se odgovor...");
                             } else {
@@ -199,11 +226,37 @@ public class ConnectedMenjazaClient implements Runnable {
                             }
                         }
                         
+                        if (line.startsWith("MANUAL_DELETE")) {
+                            String[] tokeni = line.split(";");
+                            String dupPart = tokeni[1].substring(11); 
+                            String missPart = tokeni[2].substring(8);  
+
+                            if (!dupPart.equals("Nista") && !dupPart.isEmpty()) {
+                                String[] brojevi = dupPart.split(",");
+                                for (String brStr : brojevi) {
+                                    this.duplicatesStickers.remove(Integer.valueOf(brStr.trim()));
+                                }
+                            }
+
+                            if (!missPart.equals("Nista") && !missPart.isEmpty()) {
+                                String[] brojevi = missPart.split(",");
+                                for (String brStr : brojevi) {
+                                    this.missingStickers.remove(Integer.valueOf(brStr.trim()));
+                                }
+                            }
+
+                            this.sendStickersToClient(); 
+                            
+                            try { Thread.sleep(50); } catch (InterruptedException ex) {}
+                            makePlayerList();
+                        }
+                        
                         if (line.startsWith("EXCHANGE_ACCEPTED")) {
                             String[] tokeni = line.split(";");
                             String peerName = "";
                             String hisOffer = "";
                             String hisRequire = "";
+                            
                             for(String t : tokeni) {
                                 if(t.startsWith("peer:")) peerName = t.substring(5).trim();
                                 if(t.startsWith("hisOffer:")) hisOffer = t.substring(9).trim();
@@ -213,17 +266,17 @@ public class ConnectedMenjazaClient implements Runnable {
                             for(ConnectedMenjazaClient cl : allClients) {
                                 if(cl.getUserName().equalsIgnoreCase(peerName)) {
                                     
-                                    if(!hisRequire.equals("Nista") && !hisRequire.isEmpty()){
-                                        for(String s : hisRequire.split(",")) {
-                                            this.duplicatesStickers.remove(Integer.valueOf(s.trim()));
-                                            cl.missingStickers.remove(Integer.valueOf(s.trim()));
-                                        }
-                                    }
-                                    
                                     if(!hisOffer.equals("Nista") && !hisOffer.isEmpty()){
                                         for(String s : hisOffer.split(",")) {
                                             cl.duplicatesStickers.remove(Integer.valueOf(s.trim()));
                                             this.missingStickers.remove(Integer.valueOf(s.trim()));
+                                        }
+                                    }
+                                    
+                                    if(!hisRequire.equals("Nista") && !hisRequire.isEmpty()){
+                                        for(String s : hisRequire.split(",")) {
+                                            this.duplicatesStickers.remove(Integer.valueOf(s.trim()));
+                                            cl.missingStickers.remove(Integer.valueOf(s.trim()));
                                         }
                                     }
                                     
@@ -237,8 +290,8 @@ public class ConnectedMenjazaClient implements Runnable {
                                     
                                     try { Thread.sleep(50); } catch (InterruptedException ex) {}
                                     
-                                    this.pw.println("Razmena sa igracem " + peerName + " je uspesno izvrsena!");
-                                    cl.pw.println("Igrac " + this.userName + " je prihvatio razmenu! Slicice su zamenjene.");
+                                    this.pw.println("Razmena sa igračem " + peerName + " je uspešno izvršena!");
+                                    cl.pw.println("Igrač " + this.userName + " je prihvatio razmenu! Sličice su zamenjene.");
                                     break;
                                 }
                             }
@@ -248,30 +301,34 @@ public class ConnectedMenjazaClient implements Runnable {
                         }
                         
                     } else {
-                        System.out.println("Igrac " + this.userName + " je napustio igru...");
-                        Iterator<ConnectedMenjazaClient> it = this.allClients.iterator();
-                        while(it.hasNext()){
-                            if(it.next().getUserName().equals(this.userName)){
-                                it.remove();
-                                break;
+                        System.out.println("Igrač " + this.userName + " je napustio igru...");
+                        synchronized(this.allClients){
+                            Iterator<ConnectedMenjazaClient> it = this.allClients.iterator();
+                            while(it.hasNext()){
+                                if(it.next().getUserName().equals(this.userName)){
+                                    it.remove();
+                                    break;
+                                }
                             }
                         }
-                        
+                                                
                         makePlayerList();
                         this.socket.close();
                         break;
                     }
                 }
             }catch(IOException problem){
-                System.out.println("Diskonektovan igrac: " + this.userName);
-                
-                Iterator<ConnectedMenjazaClient> it = this.allClients.iterator();
-                while(it.hasNext()){
-                    if(it.next().getUserName().equals(this.userName)){
-                        it.remove();
-                        break;
+                System.out.println("Diskonektovan igrač: " + this.userName);
+                synchronized(this.allClients){
+                    Iterator<ConnectedMenjazaClient> it = this.allClients.iterator();
+                    while(it.hasNext()){
+                        if(it.next().getUserName().equals(this.userName)){
+                            it.remove();
+                            break;
+                        }
                     }
                 }
+                
                 
                 makePlayerList();
                 return;
@@ -279,4 +336,3 @@ public class ConnectedMenjazaClient implements Runnable {
         }
     }
 }
-  
